@@ -36,6 +36,25 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
       :ignore_cvv => 'true'
     }
 
+    @subscription_options = {
+      :order_id => "test",
+      :currency => "GBP",
+      :email => "oliver@example.com",
+      :subscription => {
+        :subscription_id => "test",
+        :title => "blah",
+        :payment_method => "credit card"
+      },
+      :address => {
+        :address1 => "1 High Street",
+        :address2 => "",
+        :city => "London",
+        :state => "London",
+        :zip => "SW113EP",
+        :country => "UK"
+      }
+    }
+
   end
   
   def test_successful_authorization
@@ -116,6 +135,13 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert capture = @gateway.capture(@amount + 10, auth.authorization, @options)
     assert_failure capture
     assert_equal "The requested amount exceeds the originally authorized amount",  capture.message
+  end
+
+  def test_successful_create_subscription
+    assert response = @gateway.create_subscription(@credit_card, @subscription_options)
+    assert_success response
+    assert_equal 'Successful transaction', response.message
+    assert_not_nil response.params["requestID"]
   end
 
   def test_failed_capture_bad_auth_info

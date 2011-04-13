@@ -123,6 +123,13 @@ class CyberSourceTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_unsuccesful_create_subscription_request
+    @gateway.stubs(:ssl_post).returns(unsuccessful_create_subscription_response)
+    assert response = @gateway.create_subscription(@declined_card, @subscription_options)
+    assert !response.success?
+    assert response.test?
+  end
+
   def test_requires_error_on_purchase_without_order_id  
     assert_raise(ArgumentError){ @gateway.purchase(@amount, @credit_card, @options.delete_if{|key, val| key == :order_id}) }
   end
@@ -208,6 +215,34 @@ class CyberSourceTest < Test::Unit::TestCase
               <c:reasonCode>100</c:reasonCode>
               <c:subscriptionID>3027025543640008284282</c:subscriptionID>
             </c:paySubscriptionCreateReply>
+          </c:replyMessage>
+        </soap:Body>
+      </soap:Envelope>
+    XML
+  end
+
+  def unsuccessful_create_subscription_response
+    <<-XML
+      <?xml version="1.0" encoding="utf-8"?>
+      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Header>
+          <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <wsu:Timestamp xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsu:Id="Timestamp-26271441">
+              <wsu:Created>2011-04-13T14:51:54.285Z</wsu:Created>
+            </wsu:Timestamp>
+          </wsse:Security>
+        </soap:Header>
+        <soap:Body>
+          <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.32">
+            <c:merchantReferenceCode>test</c:merchantReferenceCode>
+            <c:requestID>3027063142440008284268</c:requestID>
+            <c:decision>REJECT</c:decision>
+            <c:reasonCode>101</c:reasonCode>
+            <c:missingField>c:card/c:accountNumber</c:missingField>
+            <c:requestToken>AhjjrwSRSDHhQ/Zsu/DYBJsPI6V0LOg+QRPRl0kyro9JcSlIpBjwofs2XfhsAAAATgZq</c:requestToken>
+            <c:ccAuthReply>
+              <c:reasonCode>101</c:reasonCode>
+            </c:ccAuthReply>
           </c:replyMessage>
         </soap:Body>
       </soap:Envelope>
