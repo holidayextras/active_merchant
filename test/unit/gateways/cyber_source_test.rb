@@ -43,6 +43,26 @@ class CyberSourceTest < Test::Unit::TestCase
                  ],
           :currency => 'USD'
     }
+
+    @subscription_options = {
+      :order_id => "test",
+      :currency => "GBP",
+      :email => "oliver@example.com",
+      :subscription => {
+        :subscription_id => "test",
+        :title => "blah",
+        :payment_method => "credit card"
+      },
+      :address => {
+        :address1 => "1 High Street",
+        :address2 => "",
+        :city => "London",
+        :state => "London",
+        :zip => "SW113EP",
+        :country => "UK"
+      }
+    }
+
   end
   
   def test_successful_purchase
@@ -96,6 +116,13 @@ class CyberSourceTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_create_subscription_request
+    @gateway.stubs(:ssl_post).returns(successful_create_subscription_response)
+    assert response = @gateway.create_subscription(@credit_card, @subscription_options)
+    assert response.success?
+    assert response.test?
+  end
+
   def test_requires_error_on_purchase_without_order_id  
     assert_raise(ArgumentError){ @gateway.purchase(@amount, @credit_card, @options.delete_if{|key, val| key == :order_id}) }
   end
@@ -137,7 +164,56 @@ class CyberSourceTest < Test::Unit::TestCase
   end
 
   private
-  
+
+  def successful_create_subscription_response
+    <<-XML
+      <?xml version="1.0" encoding="utf-8"?>
+      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Header>
+          <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <wsu:Timestamp xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsu:Id="Timestamp-11812119">
+              <wsu:Created>2011-04-13T13:49:14.851Z</wsu:Created>
+            </wsu:Timestamp>
+          </wsse:Security>
+        </soap:Header>
+        <soap:Body>
+          <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.32">
+            <c:merchantReferenceCode>test</c:merchantReferenceCode>
+            <c:requestID>3027025543640008284282</c:requestID>
+            <c:decision>ACCEPT</c:decision>
+            <c:reasonCode>100</c:reasonCode>
+            <c:requestToken>Ahj7/wSRSDDWHCTQxbD0BJukJqhPEBTdITVCeOdB8gifDJpJlXR6S4lIoE5FIMNYcJNDFsPQS1kt</c:requestToken>
+            <c:purchaseTotals>
+              <c:currency>GBP</c:currency>
+            </c:purchaseTotals>
+            <c:ccAuthReply>
+              <c:reasonCode>100</c:reasonCode>
+              <c:amount>1.00</c:amount>
+              <c:authorizationCode>1</c:authorizationCode>
+              <c:avsCode>U</c:avsCode>
+              <c:avsCodeRaw>00</c:avsCodeRaw>
+              <c:cvCode>2</c:cvCode>
+              <c:cvCodeRaw>3</c:cvCodeRaw>
+              <c:authorizedDateTime>2011-04-13T13:49:14Z</c:authorizedDateTime>
+              <c:processorResponse>0</c:processorResponse>
+            </c:ccAuthReply>
+            <c:ccAuthReversalReply>
+              <c:reasonCode>100</c:reasonCode>
+              <c:amount>1.00</c:amount>
+              <c:authorizationCode>1</c:authorizationCode>
+              <c:processorResponse>0</c:processorResponse>
+              <c:requestDateTime>2011-04-13T13:49:14Z</c:requestDateTime>
+            </c:ccAuthReversalReply>
+            <c:paySubscriptionCreateReply>
+              <c:reasonCode>100</c:reasonCode>
+              <c:subscriptionID>3027025543640008284282</c:subscriptionID>
+            </c:paySubscriptionCreateReply>
+          </c:replyMessage>
+        </soap:Body>
+      </soap:Envelope>
+    XML
+  end
+
   def successful_purchase_response
     <<-XML
 <?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">

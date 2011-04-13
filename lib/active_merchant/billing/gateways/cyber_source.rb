@@ -131,7 +131,14 @@ module ActiveMerchant #:nodoc:
       def credit(money, identification, options = {})
         commit(build_credit_request(money, identification, options), options)
       end
-      
+
+      # Subscription Methods
+      # only do on demand subscriptions, and we think auto_renew will auto renew the credit card
+      def create_subscription(creditcard, options = {})
+        setup_address_hash(options)
+        requires!(options, :subscription, :billing_address, :order_id, :email)
+        commit(build_create_subscription_request(creditcard, options), options)
+      end
 
       # CyberSource requires that you provide line item information for tax calculations
       # If you do not have prices for each item or want to simplify the situation then pass in one fake line item that costs the subtotal of the order
@@ -169,7 +176,18 @@ module ActiveMerchant #:nodoc:
         options[:billing_address] = options[:billing_address] || options[:address] || {}
         options[:shipping_address] = options[:shipping_address] || {}
       end
-      
+
+      def build_create_subscription_request(creditcard, options)
+        xml = Builder::XmlMarkup.new :indent => 2
+        add_address(xml, creditcard, options[:billing_address], options)
+        add_purchase_data(xml, options[:subscription][:amount], options[:setup_fee], options)
+        add_creditcard(xml, creditcard)
+        add_subscription(xml, options)
+        add_subscription_create_service(xml, options)
+        add_business_rules_data(xml)
+        xml.target!
+      end
+
       def build_auth_request(money, creditcard, options)
         xml = Builder::XmlMarkup.new :indent => 2
         add_address(xml, creditcard, options[:billing_address], options)
@@ -230,6 +248,36 @@ module ActiveMerchant #:nodoc:
         add_credit_service(xml, request_id, request_token)
         
         xml.target!
+      end
+
+      def add_subscription_create_service(xml, options)
+        add_auth_service(xml) if options[:setup_fee]
+        xml.tag! 'paySubscriptionCreateService', {'run' => 'true'}
+      end
+
+      def add_subscription_update_service(xml, options)
+        add_auth_service(xml) if options[:setup_fee]
+        xml.tag! 'paySubscriptionUpdateService', {'run' => 'true'}
+      end
+
+      def add_subscription_retrieve_service(xml, options)
+        xml.tag! 'paySubscriptionRetrieveService', {'run' => 'true'}
+      end
+
+      def add_subscription(xml, options)
+        xml.tag! 'recurringSubscriptionInfo' do
+          xml.tag! 'subscriptionID',    options[:subscription][:subscription_id]
+          xml.tag! 'status',            options[:subscription][:status] if options[:subscription][:status]
+          xml.tag! 'amount',            options[:subscription][:amount] if options[:subscription][:amount]
+          xml.tag! 'numberOfPayments',  options[:subscription][:occurrences] if options[:subscription][:occurrences]
+          xml.tag! 'automaticRenew',    options[:subscription][:auto_renew] if options[:subscription][:auto_renew]
+          xml.tag! 'frequency',         "on-demand"
+          xml.tag! 'startDate',         options[:subscription][:start_date].strftime("%Y%m%d") if options[:subscription][:start_date]
+          xml.tag! 'endDate',           options[:subscription][:end_date].strftime("%Y%m%d")   if options[:subscription][:end_date]
+          xml.tag! 'approvalRequired',  options[:subscription][:approval_required] || false
+          xml.tag! 'event',             options[:subscription][:event] if options[:subscription][:event]
+          xml.tag! 'billPayment',       options[:subscription][:bill_payment] if options[:subscription][:bill_payment]
+        end
       end
 
       def add_business_rules_data(xml)
