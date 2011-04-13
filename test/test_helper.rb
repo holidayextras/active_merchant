@@ -6,6 +6,13 @@ require 'test/unit'
 require 'money'
 require 'mocha'
 require 'yaml'
+
+begin
+  gem 'actionpack'
+rescue LoadError
+  raise StandardError, "The view tests need ActionPack installed as gem to run"
+end
+
 require 'active_merchant'
 
 require 'active_support/core_ext/integer/time'
@@ -14,12 +21,6 @@ require 'active_support/core_ext/numeric/time'
 begin
   require 'active_support/core_ext/time/acts_like'
 rescue LoadError
-end
-
-begin
-  gem 'actionpack'
-rescue LoadError
-  raise StandardError, "The view tests need ActionPack installed as gem to run"
 end
 
 require 'action_controller'
