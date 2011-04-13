@@ -140,6 +140,13 @@ module ActiveMerchant #:nodoc:
         commit(build_create_subscription_request(creditcard, options), options)
       end
 
+      def retrieve_subscription(subscription_id, options = {})
+        options.merge!( :subscription => {
+          :subscription_id => subscription_id
+        })
+        commit(build_retrieve_subscription_request(options), options)
+      end
+
       # CyberSource requires that you provide line item information for tax calculations
       # If you do not have prices for each item or want to simplify the situation then pass in one fake line item that costs the subtotal of the order
       #
@@ -185,6 +192,13 @@ module ActiveMerchant #:nodoc:
         add_subscription(xml, options)
         add_subscription_create_service(xml, options)
         add_business_rules_data(xml)
+        xml.target!
+      end
+
+      def build_retrieve_subscription_request(options)
+        xml = Builder::XmlMarkup.new :indent => 2
+        add_subscription(xml, options)
+        add_subscription_retrieve_service(xml, options)
         xml.target!
       end
 
