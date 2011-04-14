@@ -133,7 +133,6 @@ module ActiveMerchant #:nodoc:
       end
 
       # Subscription Methods
-      # only do on demand subscriptions, and we think auto_renew will auto renew the credit card
       def create_subscription(creditcard, options = {})
         setup_address_hash(options)
         requires!(options, :subscription, :billing_address, :order_id, :email)
@@ -148,6 +147,11 @@ module ActiveMerchant #:nodoc:
       def auth_subscription(money, subscription_id, options = {})
         setup_subscription_hash(subscription_id, options)
         commit(build_auth_subscription_request(money, subscription_id, options), options)
+      end
+
+      def delete_subscription(subscription_id, options = {})
+        setup_subscription_hash(subscription_id, options)
+        commit(build_delete_subscription_request(options), options)
       end
 
       # CyberSource requires that you provide line item information for tax calculations
@@ -217,6 +221,13 @@ module ActiveMerchant #:nodoc:
         add_subscription(xml, options)
         add_auth_service(xml)
         add_business_rules_data(xml)
+        xml.target!
+      end
+
+      def build_delete_subscription_request(options)
+        xml = Builder::XmlMarkup.new :indent => 2
+        add_subscription(xml, options)
+        add_subscription_delete_service(xml, options)
         xml.target!
       end
 
@@ -296,14 +307,18 @@ module ActiveMerchant #:nodoc:
         xml.tag! 'paySubscriptionRetrieveService', {'run' => 'true'}
       end
 
+      def add_subscription_delete_service(xml, options)
+        xml.tag! 'paySubscriptionDeleteService', {'run' => 'true'}
+      end
+
       def add_subscription(xml, options)
         xml.tag! 'recurringSubscriptionInfo' do
-          xml.tag! 'subscriptionID',    options[:subscription][:subscription_id]
+          xml.tag! 'subscriptionID',    options[:subscription][:subscription_id] if options[:subscription][:subscription_id]
           xml.tag! 'status',            options[:subscription][:status] if options[:subscription][:status]
           xml.tag! 'amount',            options[:subscription][:amount] if options[:subscription][:amount]
           xml.tag! 'numberOfPayments',  options[:subscription][:occurrences] if options[:subscription][:occurrences]
           xml.tag! 'automaticRenew',    options[:subscription][:auto_renew] if options[:subscription][:auto_renew]
-          xml.tag! 'frequency',         "on-demand"
+          xml.tag! 'frequency',         options[:subscription][:frequency] || "on-demand"
           xml.tag! 'startDate',         options[:subscription][:start_date].strftime("%Y%m%d") if options[:subscription][:start_date]
           xml.tag! 'endDate',           options[:subscription][:end_date].strftime("%Y%m%d")   if options[:subscription][:end_date]
           xml.tag! 'approvalRequired',  options[:subscription][:approval_required] || false

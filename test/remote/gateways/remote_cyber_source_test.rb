@@ -176,6 +176,20 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert !response.authorization.blank?
   end
 
+  def test_successful_delete_subscription
+    assert response = @gateway.create_subscription(@credit_card, @subscription_options)
+    assert_success response
+    subscription_id = response.params["requestID"]
+
+    assert delete = @gateway.delete_subscription(subscription_id, @options)
+    assert_success delete
+  end
+
+  def test_unsuccessful_delete_subscription
+    assert delete = @gateway.delete_subscription(123, @options)
+    assert_equal false,  delete.success?
+  end
+
   def test_failed_capture_bad_auth_info
     assert auth = @gateway.authorize(@amount, @credit_card, @options)
     assert capture = @gateway.capture(@amount, "a;b;c", @options)

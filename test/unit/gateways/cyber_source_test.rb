@@ -162,6 +162,22 @@ class CyberSourceTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_delete_subscription_request
+    @gateway.stubs(:ssl_post).returns(successful_delete_subscription_response)
+    subscription_id = 123
+    assert response = @gateway.delete_subscription(subscription_id, @options)
+    assert_equal Response, response.class
+    assert response.success?
+    assert response.test?
+  end
+
+  def test_unsuccessful_delete_subscription_request
+    @gateway.stubs(:ssl_post).returns(unsuccessful_delete_subscription_response)
+    assert response = @gateway.delete_subscription(123, @options)
+    assert !response.success?
+    assert response.test?
+  end
+
   def test_requires_error_on_purchase_without_order_id  
     assert_raise(ArgumentError){ @gateway.purchase(@amount, @credit_card, @options.delete_if{|key, val| key == :order_id}) }
   end
@@ -411,6 +427,61 @@ class CyberSourceTest < Test::Unit::TestCase
             <c:decision>REJECT</c:decision>
             <c:reasonCode>102</c:reasonCode>
             <c:requestToken>AhhBLwSRSEWuTHpuORjZnQigjNpJlXR6S4lItGbV</c:requestToken>
+          </c:replyMessage>
+        </soap:Body>
+      </soap:Envelope>
+    XML
+  end
+
+  def successful_delete_subscription_response
+    <<-XML
+      <?xml version="1.0" encoding="utf-8"?>
+      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Header>
+          <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <wsu:Timestamp xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsu:Id="Timestamp-9838866">
+              <wsu:Created>2011-04-14T13:43:24.151Z</wsu:Created>
+            </wsu:Timestamp>
+          </wsse:Security>
+        </soap:Header>
+        <soap:Body>
+          <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.51">
+            <c:merchantReferenceCode>test</c:merchantReferenceCode>
+            <c:requestID>3027886040530008284282</c:requestID>
+            <c:decision>ACCEPT</c:decision>
+            <c:reasonCode>100</c:reasonCode>
+            <c:requestToken>AhijLwSRSEi4Tt5WVDj0BJukJsRUcAIoQyaSZV0ekuJSAAAA/wGD</c:requestToken>
+            <c:paySubscriptionDeleteReply>
+              <c:reasonCode>100</c:reasonCode>
+              <c:subscriptionID>3026187276810008284282</c:subscriptionID>
+            </c:paySubscriptionDeleteReply>
+          </c:replyMessage>
+        </soap:Body>
+      </soap:Envelope>
+    XML
+  end
+
+  def unsuccessful_delete_subscription_response
+    <<-XML
+      <?xml version="1.0" encoding="utf-8"?>
+      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Header>
+          <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <wsu:Timestamp xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsu:Id="Timestamp-12681422">
+              <wsu:Created>2011-04-14T14:03:56.446Z</wsu:Created>
+            </wsu:Timestamp>
+          </wsse:Security>
+        </soap:Header>
+        <soap:Body>
+          <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.51">
+            <c:merchantReferenceCode>test</c:merchantReferenceCode>
+            <c:requestID>3027898364080008284282</c:requestID>
+            <c:decision>REJECT</c:decision>
+            <c:reasonCode>102</c:reasonCode>
+            <c:requestToken>AhijLwSRSEkP30Z+kpD0BJukJsSpIAIoIzaSZV0ekuJSAAAA/wGE</c:requestToken>
+            <c:paySubscriptionDeleteReply>
+              <c:reasonCode>102</c:reasonCode>
+            </c:paySubscriptionDeleteReply>
           </c:replyMessage>
         </soap:Body>
       </soap:Envelope>
