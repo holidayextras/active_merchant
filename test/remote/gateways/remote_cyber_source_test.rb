@@ -144,6 +144,13 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert_not_nil response.params["requestID"]
   end
 
+  def test_unsuccessful_create_subscription
+    assert response = @gateway.create_subscription(@declined_card, @subscription_options)
+    assert response.test?
+    assert_equal 'Invalid account number', response.message
+    assert_equal false,  response.success?
+  end
+
   def test_successful_retrieve_subscription
     assert response = @gateway.create_subscription(@credit_card, @subscription_options)
     assert_success response
