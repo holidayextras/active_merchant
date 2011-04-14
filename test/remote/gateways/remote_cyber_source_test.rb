@@ -158,6 +158,17 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert_not_nil details.params["cardExpirationMonth"]
   end
 
+  def test_successful_auth_subscription
+    assert response = @gateway.create_subscription(@credit_card, @subscription_options)
+    assert_success response
+    subscription_id = response.params["requestID"]
+
+    assert auth = @gateway.auth_subscription(@amount, subscription_id, @options)
+    assert_success auth
+    assert_equal 'Successful transaction', auth.message
+    assert !response.authorization.blank?
+  end
+
   def test_failed_capture_bad_auth_info
     assert auth = @gateway.authorize(@amount, @credit_card, @options)
     assert capture = @gateway.capture(@amount, "a;b;c", @options)

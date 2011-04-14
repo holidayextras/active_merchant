@@ -144,6 +144,24 @@ class CyberSourceTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_auth_subscription_request
+    @gateway.stubs(:ssl_post).returns(successful_auth_subscription_response)
+    subscription_id = 123
+    assert response = @gateway.auth_subscription(@amount, subscription_id, @options)
+    assert_equal Response, response.class
+    assert response.success?
+    assert response.test?
+  end
+
+  def test_unsuccessful_auth_subscription_request
+    @gateway.stubs(:ssl_post).returns(unsuccessful_auth_subscription_response)
+    subscription_id = 123
+    assert response = @gateway.auth_subscription(@amount, subscription_id, @options)
+    assert_equal Response, response.class
+    assert !response.success?
+    assert response.test?
+  end
+
   def test_requires_error_on_purchase_without_order_id  
     assert_raise(ArgumentError){ @gateway.purchase(@amount, @credit_card, @options.delete_if{|key, val| key == :order_id}) }
   end
@@ -334,6 +352,65 @@ class CyberSourceTest < Test::Unit::TestCase
             <c:paySubscriptionRetrieveReply>
               <c:reasonCode>102</c:reasonCode>
             </c:paySubscriptionRetrieveReply>
+          </c:replyMessage>
+        </soap:Body>
+      </soap:Envelope>
+    XML
+  end
+
+  def successful_auth_subscription_response
+    <<-XML
+      <?xml version="1.0" encoding="utf-8"?>
+      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Header>
+          <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <wsu:Timestamp xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsu:Id="Timestamp-4108588">
+              <wsu:Created>2011-04-14T10:25:36.427Z</wsu:Created>
+            </wsu:Timestamp>
+          </wsse:Security>
+        </soap:Header>
+        <soap:Body>
+          <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.32">
+            <c:merchantReferenceCode>test</c:merchantReferenceCode>
+            <c:requestID>3027767362880008284310</c:requestID>
+            <c:decision>ACCEPT</c:decision>
+            <c:reasonCode>100</c:reasonCode>
+            <c:requestToken>Ahj77wSRSEVtDXsQRdEsBJvJZ4L+sBTeSzwX9edEcNQCKEMmkmVdHpLiUwJyKQitoa9iCLolgAAAwBC5</c:requestToken>
+            <c:purchaseTotals>
+              <c:currency>GBP</c:currency>
+            </c:purchaseTotals>
+            <c:ccAuthReply>
+              <c:reasonCode>100</c:reasonCode>
+              <c:amount>1000.00</c:amount>
+              <c:authorizationCode>1000</c:authorizationCode>
+              <c:avsCode>U</c:avsCode>
+              <c:avsCodeRaw>00</c:avsCodeRaw>
+              <c:authorizedDateTime>2011-04-14T10:25:36Z</c:authorizedDateTime>
+              <c:processorResponse>0</c:processorResponse>
+            </c:ccAuthReply>
+          </c:replyMessage>
+        </soap:Body>
+      </soap:Envelope>
+    XML
+  end
+
+  def unsuccessful_auth_subscription_response
+    <<-XML
+      <?xml version="1.0" encoding="utf-8"?>
+      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Header>
+          <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <wsu:Timestamp xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsu:Id="Timestamp-22507149">
+              <wsu:Created>2011-04-14T10:40:54.580Z</wsu:Created>
+            </wsu:Timestamp>
+          </wsse:Security>
+        </soap:Header>
+        <soap:Body>
+          <c:replyMessage xmlns:c="urn:schemas-cybersource-com:transaction-data-1.32">
+            <c:requestID>3027776545450008284268</c:requestID>
+            <c:decision>REJECT</c:decision>
+            <c:reasonCode>102</c:reasonCode>
+            <c:requestToken>AhhBLwSRSEWuTHpuORjZnQigjNpJlXR6S4lItGbV</c:requestToken>
           </c:replyMessage>
         </soap:Body>
       </soap:Envelope>

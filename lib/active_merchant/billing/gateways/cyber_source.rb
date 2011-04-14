@@ -141,10 +141,13 @@ module ActiveMerchant #:nodoc:
       end
 
       def retrieve_subscription(subscription_id, options = {})
-        options.merge!( :subscription => {
-          :subscription_id => subscription_id
-        })
+        setup_subscription_hash(subscription_id, options)
         commit(build_retrieve_subscription_request(options), options)
+      end
+
+      def auth_subscription(money, subscription_id, options = {})
+        setup_subscription_hash(subscription_id, options)
+        commit(build_auth_subscription_request(money, subscription_id, options), options)
       end
 
       # CyberSource requires that you provide line item information for tax calculations
@@ -184,6 +187,12 @@ module ActiveMerchant #:nodoc:
         options[:shipping_address] = options[:shipping_address] || {}
       end
 
+      def setup_subscription_hash(subscription_id, options)
+        options.merge!( :subscription => {
+          :subscription_id => subscription_id
+        })
+      end
+
       def build_create_subscription_request(creditcard, options)
         xml = Builder::XmlMarkup.new :indent => 2
         add_address(xml, creditcard, options[:billing_address], options)
@@ -199,6 +208,15 @@ module ActiveMerchant #:nodoc:
         xml = Builder::XmlMarkup.new :indent => 2
         add_subscription(xml, options)
         add_subscription_retrieve_service(xml, options)
+        xml.target!
+      end
+
+      def build_auth_subscription_request(money, subscription_id, options)
+        xml = Builder::XmlMarkup.new :indent => 2
+        add_purchase_data(xml, money, true, options)
+        add_subscription(xml, options)
+        add_auth_service(xml)
+        add_business_rules_data(xml)
         xml.target!
       end
 
