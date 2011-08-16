@@ -14,7 +14,7 @@ module ActiveMerchant #:nodoc:
       LIVE_URL = 'https://www3.moneris.com/gateway2/servlet/MpgRequest'
       
       self.supported_countries = ['CA']
-      self.supported_cardtypes = [:visa, :master, :american_express]
+      self.supported_cardtypes = [:visa, :master, :american_express, :diners_club, :discover]
       self.homepage_url = 'http://www.moneris.com/'
       self.display_name = 'Moneris'
   
@@ -71,7 +71,7 @@ module ActiveMerchant #:nodoc:
       # Moneris interface consistent with other gateways. (See +capture+ for 
       # details.)
       def credit(money, authorization, options = {})
-        warn CREDIT_DEPRECATION_MESSAGE
+        deprecated CREDIT_DEPRECATION_MESSAGE
         refund(money, authorization, options)
       end
    

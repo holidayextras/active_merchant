@@ -1,11 +1,9 @@
-require 'securerandom'
-
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class QbmsGateway < Gateway
       API_VERSION = '4.0'
 
-      class_inheritable_accessor :test_url, :live_url
+      class_attribute :test_url, :live_url
 
       self.test_url = "https://webmerchantaccount.ptc.quickbooks.com/j/AppGateway"
       self.live_url = "https://webmerchantaccount.quickbooks.com/j/AppGateway"
@@ -104,7 +102,7 @@ module ActiveMerchant #:nodoc:
       #
       #
       def credit(money, identification, options = {})
-        warn CREDIT_DEPRECATION_MESSAGE
+        deprecated CREDIT_DEPRECATION_MESSAGE
         refund(money, identification, options = {})
       end
 
@@ -118,7 +116,7 @@ module ActiveMerchant #:nodoc:
       end
 
       private
-      
+
       def hosted?
         @options[:pem]
       end

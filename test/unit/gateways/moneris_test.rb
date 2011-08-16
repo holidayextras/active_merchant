@@ -32,7 +32,9 @@ class MonerisTest < Test::Unit::TestCase
   def test_deprecated_credit
     @gateway.expects(:ssl_post).with(anything, regexp_matches(/txn_number>123<\//), anything).returns("")
     @gateway.expects(:parse).returns({})
-    @gateway.credit(@amount, "123;456", @options)
+    assert_deprecation_warning(Gateway::CREDIT_DEPRECATION_MESSAGE, @gateway) do
+      @gateway.credit(@amount, "123;456", @options)
+    end
   end
   
   def test_refund
@@ -99,7 +101,7 @@ class MonerisTest < Test::Unit::TestCase
   end
   
   def test_supported_card_types
-    assert_equal [:visa, :master, :american_express], MonerisGateway.supported_cardtypes
+    assert_equal [:visa, :master, :american_express, :diners_club, :discover], MonerisGateway.supported_cardtypes
   end
 
   def test_should_raise_error_if_transaction_param_empty_on_credit_request

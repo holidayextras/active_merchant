@@ -23,7 +23,7 @@ class BarclaysEpdqTest < Test::Unit::TestCase
     assert_success response
     
     # Replace with authorization number from the successful response
-    assert_equal '150127237:4d45da6a-5e11-3000-002b-00144ff2e45c', response.authorization
+    assert_equal '4d45da6a-5e11-3000-002b-00144ff2e45c', response.authorization
     assert response.test?
   end
 
@@ -37,7 +37,14 @@ class BarclaysEpdqTest < Test::Unit::TestCase
 
   def test_deprecated_credit
     @gateway.expects(:ssl_post).with(anything, regexp_matches(/>asdfasdf</)).returns(successful_credit_response)
-    assert response = @gateway.credit(@amount, "asdfasdf:jklljkll")
+    assert_deprecation_warning(Gateway::CREDIT_DEPRECATION_MESSAGE, @gateway) do
+      assert_success @gateway.credit(@amount, "asdfasdf:jklljkll")
+    end
+  end
+
+  def test_refund
+    @gateway.expects(:ssl_post).with(anything, regexp_matches(/>asdfasdf</)).returns(successful_credit_response)
+    assert response = @gateway.refund(@amount, "asdfasdf:jklljkll")
     assert_success response
   end
 
